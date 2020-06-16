@@ -23,6 +23,8 @@
 
 PS2X ps2x; // create PS2 Controller Class
 
+extern unsigned int dial;
+
 unsigned long lastCommandSentMillis = 0;
 
 void setUpPS2()
@@ -219,17 +221,6 @@ void loopPS2(byte vibrate)
 
     if (joystickObj.size() > 0)
     {
-        int sensorValue = analogRead(A0);
-
-        int dial = map(sensorValue, 0, 1024, 1, 4);
-
-        //1024 ! 600 ! 302 ! 3
-        //0 < 200
-        //200 < 500
-        //500 < 800
-        //800 < 2000  
-
-        joystick["dial_raw"] = sensorValue;
         joystick["dial"] = dial;
         joystick["make"] = "PS2";
 

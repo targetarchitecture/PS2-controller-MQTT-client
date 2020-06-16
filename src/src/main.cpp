@@ -3,21 +3,25 @@
 #include <vars.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h> // Include the mDNS library
-#include <DNSServer.h>   //Local DNS Server used for redirecting all requests to the configuration portal
+//#include <DNSServer.h>   //Local DNS Server used for redirecting all requests to the configuration portal
 #include <credentials.h>
 #include <mqttClient.h>
 #include <ps2.h>
-#include <ArduinoOTA.h>
+//#include <ArduinoOTA.h>
 
 // declare objects & variables
 void setupWifi();
 void setOTA();
+void getSwitchValue();
+
+unsigned int dial = -1;
 
 unsigned long interval = 1000 * 60 * 10; //10 minutes for a reboot if no signal recieved
 
 void setup()
 {
   pinMode(A0, INPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 
   Serial.begin(115200);
 
@@ -31,18 +35,18 @@ void setup()
   publishMQTTmessage("Connected to SSID: " + SSID);
   publishMQTTmessage("IP address: " + WiFi.localIP().toString());
 
-  setOTA();
+  getSwitchValue(); //get switch value once
+
+  //setOTA();
 
   setUpPS2(); //connect controller
-
-  pinMode(LED_BUILTIN, OUTPUT);
 
   MQTT_RUMBLE = 0;
 }
 
 void loop()
 {
-  ArduinoOTA.handle();
+  //ArduinoOTA.handle();
 
   MDNS.update();
 
@@ -57,7 +61,7 @@ void loop()
     MQTT_RUMBLE = 0;
   }
 
-  delay(50); 
+  delay(50);
 
   digitalWrite(LED_BUILTIN, HIGH); //set LED off
 
@@ -79,37 +83,79 @@ void loop()
   }
 }
 
+void getSwitchValue()
+{
+  const int numReadings = 10;
+
+  int total = 0; // the running total
+
+  for (int thisReading = 0; thisReading < numReadings; thisReading++)
+  {
+    int sensorValue = analogRead(A0);
+
+    total = total + sensorValue;
+
+    delay(100);
+  }
+
+  // calculate the average:
+  int average = total / numReadings;
+
+  Serial.print("Raw dial value:");
+  Serial.println(average);
+
+  if (average < 200)
+  {
+    dial = 1;
+  }
+  else if ((200 < average) && (average < 350))
+  {
+    dial = 2;
+  }
+  else if ((350 < average) && (average < 800))
+  {
+    dial = 3;
+  }
+  else
+  {
+    dial = 4;
+  }
+
+  Serial.print("Dial position:");
+  Serial.println(dial);
+}
+
 void setOTA()
 {
-  ArduinoOTA.setHostname(MDNS_HOSTNAME);
-  ArduinoOTA.setPassword(OTA_PASSWORD);
+  // ArduinoOTA.setHostname(MDNS_HOSTNAME);
+  // ArduinoOTA.setPassword(OTA_PASSWORD);
 
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
+  // ArduinoOTA.onStart([]() {
+  //   Serial.println("Start");
+  // });
 
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
+  // ArduinoOTA.onEnd([]() {
+  //   Serial.println("\nEnd");
+  // });
 
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
+  // ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+  //   Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  // });
 
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR)
-      Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR)
-      Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR)
-      Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR)
-      Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR)
-      Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
+  // ArduinoOTA.onError([](ota_error_t error) {
+  //   Serial.printf("Error[%u]: ", error);
+  //   if (error == OTA_AUTH_ERROR)
+  //     Serial.println("Auth Failed");
+  //   else if (error == OTA_BEGIN_ERROR)
+  //     Serial.println("Begin Failed");
+  //   else if (error == OTA_CONNECT_ERROR)
+  //     Serial.println("Connect Failed");
+  //   else if (error == OTA_RECEIVE_ERROR)
+  //     Serial.println("Receive Failed");
+  //   else if (error == OTA_END_ERROR)
+  //     Serial.println("End Failed");
+  // });
+  // ArduinoOTA.begin();
 }
 
 void setupWifi()
