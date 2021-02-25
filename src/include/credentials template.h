@@ -9,6 +9,6 @@ auto MQTT_CLIENTID = "PS2controller";
 auto MQTT_USERNAME = "targetarchitecture";
 auto MQTT_KEY = "******************************************";
 auto MQTT_TOPIC = "PS2/state";
-auto MQTT_IP_TOPIC = "PS2/ip";
+auto MQTT_IP_TOPIC = "PS2/IP";
 auto MQTT_DIAL_TOPIC = "PS2/dial";
 auto MQTT_RUMBLE_TOPIC = "PS2/rumble";

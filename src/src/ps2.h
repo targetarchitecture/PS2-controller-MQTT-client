@@ -50,12 +50,6 @@ void setUpPS2()
         if (ps2xError == 0)
         {
             ps2xErrorMsg << "Found Controller, configured successful (loop " << i << ")";
-
-            publishMQTTmessage(ps2xErrorMsg.str());
-
-            delay(1000);
-
-            return; //leave the setup function
         }
         else if (ps2xError == 1)
         {
@@ -73,6 +67,10 @@ void setUpPS2()
         Serial.println(ps2xErrorMsg.str().c_str());
 
         publishMQTTmessage(ps2xErrorMsg.str());
+
+        if (ps2xError ==0 ){
+            return; //leave the setup function
+        }
 
         delay(1000);
     }
