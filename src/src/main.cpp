@@ -1,17 +1,13 @@
 #include <Arduino.h>
-#include <string>
+#include <sstream>
 #include <vars.h>
 #include <ESP8266WiFi.h>
-//#include <ESP8266mDNS.h> // Include the mDNS library
-//#include <DNSServer.h>   //Local DNS Server used for redirecting all requests to the configuration portal
 #include "credentials.h"
 #include <mqttClient.h>
 #include <ps2.h>
-//#include <ArduinoOTA.h>
 
 // declare objects & variables
 void setupWifi();
-void setOTA();
 void getSwitchValue();
 
 unsigned int dial = -1;
@@ -31,16 +27,10 @@ void setup()
 
   setupMQTTClient();
 
-  //String SSID = WIFI_SSID;
-  // publishMQTTmessage("Connected to SSID: " + SSID);
-  // publishMQTTmessage("IP address: " + WiFi.localIP().toString());
-
   MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
   MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
 
   getSwitchValue(); //get switch value once
-
-  //setOTA();
 
   setUpPS2(); //connect controller
 
@@ -49,10 +39,6 @@ void setup()
 
 void loop()
 {
-  //ArduinoOTA.handle();
-
-  //MDNS.update();
-
   loopPS2(MQTT_RUMBLE);
 
   unsigned long currentMillis = millis();
@@ -129,39 +115,11 @@ void getSwitchValue()
 
   Serial.print("Dial position:");
   Serial.println(dial);
-}
 
-void setOTA()
-{
-  // ArduinoOTA.setHostname(MDNS_HOSTNAME);
-  // ArduinoOTA.setPassword(OTA_PASSWORD);
+  std::stringstream msg;
+  msg << dial;
 
-  // ArduinoOTA.onStart([]() {
-  //   Serial.println("Start");
-  // });
-
-  // ArduinoOTA.onEnd([]() {
-  //   Serial.println("\nEnd");
-  // });
-
-  // ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-  //   Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  // });
-
-  // ArduinoOTA.onError([](ota_error_t error) {
-  //   Serial.printf("Error[%u]: ", error);
-  //   if (error == OTA_AUTH_ERROR)
-  //     Serial.println("Auth Failed");
-  //   else if (error == OTA_BEGIN_ERROR)
-  //     Serial.println("Begin Failed");
-  //   else if (error == OTA_CONNECT_ERROR)
-  //     Serial.println("Connect Failed");
-  //   else if (error == OTA_RECEIVE_ERROR)
-  //     Serial.println("Receive Failed");
-  //   else if (error == OTA_END_ERROR)
-  //     Serial.println("End Failed");
-  // });
-  // ArduinoOTA.begin();
+  MQTTClient.publish(MQTT_DIAL_TOPIC, msg.str().c_str());
 }
 
 void setupWifi()
@@ -178,10 +136,4 @@ void setupWifi()
 
   Serial.println("Ready on the local network");
   Serial.println("IP address: " + WiFi.localIP().toString());
-
-  // if (!MDNS.begin(MDNS_HOSTNAME))
-  // { // Start the mDNS responder for esp8266.local
-  //   Serial.println("Error setting up MDNS responder!");
-  // }
-  //Serial.println("mDNS responder started");
 }

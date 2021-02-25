@@ -1,4 +1,6 @@
 #include <PS2X_lib.h> //for v1.6
+
+#define ARDUINOJSON_ENABLE_STD_STRING 1
 #include <ArduinoJSON.h>
 
 /******************************************************************
@@ -39,7 +41,7 @@ void setUpPS2()
 
     for (int i = 0; i <= maxAttempts; i++) //looping
     {
-        String ps2xErrorMsg = "";
+        std::stringstream ps2xErrorMsg;
         int ps2xError = 0;
 
         //setup pins and settings: GamePad(clock, command, attention, data, Pressures?, Rumble?) check for error
@@ -47,11 +49,9 @@ void setUpPS2()
 
         if (ps2xError == 0)
         {
-            ps2xErrorMsg = "Found Controller, configured successful (loop " + String(i) + ")";
+            ps2xErrorMsg << "Found Controller, configured successful (loop " << i << ")";
 
-            Serial.println(ps2xErrorMsg);
-
-            publishMQTTmessage(ps2xErrorMsg);
+            publishMQTTmessage(ps2xErrorMsg.str());
 
             delay(1000);
 
@@ -59,25 +59,28 @@ void setUpPS2()
         }
         else if (ps2xError == 1)
         {
-            ps2xErrorMsg = "No controller found (loop " + String(i) + ")";
+            ps2xErrorMsg << "No controller found  (loop " << i << ")";
         }
         else if (ps2xError == 2)
         {
-            ps2xErrorMsg = "Controller found but not accepting commands (loop " + String(i) + ")";
+            ps2xErrorMsg << "Controller found but not accepting commands  (loop " << i << ")";
         }
         else if (ps2xError == 3)
         {
-            ps2xErrorMsg = "Controller refusing to enter Pressures mode, may not support it (loop " + String(i) + ")";
+            ps2xErrorMsg << "Controller refusing to enter Pressures mode, may not support it  (loop " << i << ")";
         }
 
-        Serial.println(ps2xErrorMsg);
+        Serial.println(ps2xErrorMsg.str().c_str());
 
-        publishMQTTmessage(ps2xErrorMsg);
+        publishMQTTmessage(ps2xErrorMsg.str());
 
         delay(1000);
     }
 
-    publishMQTTmessage("Time to reboot after " + String(maxAttempts) + " attempts to connect controller");
+    std::stringstream ps2xMsg;
+    ps2xMsg << "Time to reboot after " << maxAttempts << " attempts to connect controller";
+
+    publishMQTTmessage(ps2xMsg.str());
     delay(500);
 
     //well it's probably time for a reboot
@@ -94,7 +97,10 @@ void loopPS2(byte vibrate)
 
     if (vibrate > 0)
     {
-        publishMQTTmessage("Vibrate set to " + String(vibrate));
+        std::stringstream ps2xMsg;
+        ps2xMsg << "Vibrate set to " << vibrate;
+
+        publishMQTTmessage(ps2xMsg.str());
     }
 
     bool turnOnLEDtoShowMQTTMessage = false;
@@ -270,7 +276,7 @@ void loopPS2(byte vibrate)
         joystick["dial"] = dial;
         joystick["make"] = "PS2";
 
-        String json;
+        std::string json;
 
         serializeJson(joystick, json);
 

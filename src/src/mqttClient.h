@@ -8,7 +8,7 @@ void setupMQTTClient()
 {
   Serial.println("Connecting to MQTT server");
 
-    //set this to be a large enough value to allow a large MQTT message
+  //set this to be a large enough value to allow a large MQTT message
   MQTTClient.setBufferSize(5000);
 
   MQTTClient.setServer(MQTT_SERVER, 1883);
@@ -18,10 +18,7 @@ void setupMQTTClient()
 
   Serial.println("connect mqtt...");
 
-  String clientId = MQTT_CLIENTID;
-  //clientId += "-" + String(random(0xffff), HEX);
-
-  if (MQTTClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_KEY))
+  if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
   {
     Serial.println("Connected");
     MQTTClient.publish(MQTT_TOPIC, "Connected");
@@ -39,12 +36,9 @@ void reconnect()
     yield();
 
     Serial.print("Attempting MQTT connection...");
-    // Create a random client ID
-    String clientId = MQTT_CLIENTID;
-    //clientId += "-" + String(random(0xffff), HEX);
-    
+
     // Attempt to connect
-    if (MQTTClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_KEY))
+    if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
     {
       Serial.println("connected");
       // Once connected, publish an announcement...
@@ -69,23 +63,25 @@ void callback(char *topic, byte *payload, unsigned int length)
   Serial.print(topic);
   Serial.print("] ");
 
-  String message = "";
+  std::string message = "";
 
   for (int i = 0; i < length; i++)
   {
     message += (char)payload[i];
   }
 
-  Serial.println(message);
+  Serial.println(message.c_str());
 
   if (std::string(topic) == std::string(MQTT_RUMBLE_TOPIC))
   {
-    MQTT_RUMBLE = map(message.toInt(), 0, 100, 0, 255); //translate 0-100% to 0-255 bytes
+    int RumbleStrength = atoi(message.c_str());
+
+    MQTT_RUMBLE = map(RumbleStrength, 0, 100, 0, 255); //translate 0-100% to 0-255 bytes
     lastRumbleCommandRecievedMillis = millis();
   }
 }
 
-void publishMQTTmessage(String msg)
+void publishMQTTmessage(std::string msg)
 {
   MQTTClient.publish(MQTT_TOPIC, msg.c_str());
 
