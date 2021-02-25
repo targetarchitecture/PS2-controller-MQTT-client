@@ -8,6 +8,9 @@ void setupMQTTClient()
 {
   Serial.println("Connecting to MQTT server");
 
+    //set this to be a large enough value to allow a large MQTT message
+  MQTTClient.setBufferSize(5000);
+
   MQTTClient.setServer(MQTT_SERVER, 1883);
 
   // setup callbacks
@@ -85,4 +88,6 @@ void callback(char *topic, byte *payload, unsigned int length)
 void publishMQTTmessage(String msg)
 {
   MQTTClient.publish(MQTT_TOPIC, msg.c_str());
+
+  //Serial.print(".");
 }

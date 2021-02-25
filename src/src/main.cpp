@@ -2,9 +2,9 @@
 #include <string>
 #include <vars.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h> // Include the mDNS library
+//#include <ESP8266mDNS.h> // Include the mDNS library
 //#include <DNSServer.h>   //Local DNS Server used for redirecting all requests to the configuration portal
-#include <credentials.h>
+#include "credentials.h"
 #include <mqttClient.h>
 #include <ps2.h>
 //#include <ArduinoOTA.h>
@@ -31,9 +31,12 @@ void setup()
 
   setupMQTTClient();
 
-  String SSID = WIFI_SSID;
-  publishMQTTmessage("Connected to SSID: " + SSID);
-  publishMQTTmessage("IP address: " + WiFi.localIP().toString());
+  //String SSID = WIFI_SSID;
+  // publishMQTTmessage("Connected to SSID: " + SSID);
+  // publishMQTTmessage("IP address: " + WiFi.localIP().toString());
+
+  MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
+  MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
 
   getSwitchValue(); //get switch value once
 
@@ -48,7 +51,7 @@ void loop()
 {
   //ArduinoOTA.handle();
 
-  MDNS.update();
+  //MDNS.update();
 
   loopPS2(MQTT_RUMBLE);
 
@@ -61,15 +64,15 @@ void loop()
     MQTT_RUMBLE = 0;
   }
 
-  delay(50);
-
-  digitalWrite(LED_BUILTIN, HIGH); //set LED off
+  //delay(50); //produces 17-19 messages per second
+  delay(100); //produces 9-10 messages per second
 
   //MQTT section
   if (!MQTTClient.connected())
   {
     reconnect();
   }
+
   MQTTClient.loop();
 
   //check for in-activity
@@ -81,6 +84,9 @@ void loop()
     //well it's probably time for a reboot
     ESP.restart();
   }
+
+  //set LED off
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void getSwitchValue()
@@ -173,9 +179,9 @@ void setupWifi()
   Serial.println("Ready on the local network");
   Serial.println("IP address: " + WiFi.localIP().toString());
 
-  if (!MDNS.begin(MDNS_HOSTNAME))
-  { // Start the mDNS responder for esp8266.local
-    Serial.println("Error setting up MDNS responder!");
-  }
-  Serial.println("mDNS responder started");
+  // if (!MDNS.begin(MDNS_HOSTNAME))
+  // { // Start the mDNS responder for esp8266.local
+  //   Serial.println("Error setting up MDNS responder!");
+  // }
+  //Serial.println("mDNS responder started");
 }
