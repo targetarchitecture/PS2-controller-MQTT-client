@@ -1,10 +1,12 @@
 #include <Arduino.h>
 #include <sstream>
-#include <vars.h>
 #include <ESP8266WiFi.h>
-#include "credentials.h"
+#include <PubSubClient.h>
 #include <mqttClient.h>
 #include <ps2.h>
+#include "credentials.h"
+#include "topics.h"
+#include "vars.h"
 
 // declare objects & variables
 void setupWifi();
@@ -41,9 +43,9 @@ void loop()
 {
   loopPS2(MQTT_RUMBLE);
 
+  //stop rumble after 500ms if no MQTT signal recieved
   unsigned long currentMillis = millis();
 
-  //stop rumble after 500ms if no MQTT signal recieved
   if (currentMillis - lastRumbleCommandRecievedMillis > 500)
   {
     lastRumbleCommandRecievedMillis = currentMillis;
@@ -52,6 +54,11 @@ void loop()
 
   //delay(50); //produces 17-19 messages per second
   delay(100); //produces 9-10 messages per second
+
+  if (WiFi.isConnected() == false)
+  {
+    setupWifi();
+  }
 
   //MQTT section
   if (!MQTTClient.connected())
@@ -64,7 +71,8 @@ void loop()
   //check for in-activity
   if (currentMillis - lastCommandSentMillis > interval)
   {
-    publishMQTTmessage("Time to reboot due to inactivity");
+    MQTTClient.publish(MQTT_INFO_TOPIC, "Time to reboot due to inactivity");
+
     delay(500);
 
     //well it's probably time for a reboot
