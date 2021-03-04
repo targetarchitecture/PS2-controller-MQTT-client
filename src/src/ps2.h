@@ -74,7 +74,8 @@ void setUpPS2()
 
         Serial.println(ps2xErrorMsg.str().c_str());
 
-        MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
+MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
+        MQTTClient.publish(MQTT_ERROR_TOPIC, ps2xErrorMsg.str().c_str());
 
         if (ps2xError == 0)
         {
