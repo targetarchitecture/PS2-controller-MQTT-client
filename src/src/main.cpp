@@ -52,8 +52,9 @@ void loop()
     MQTT_RUMBLE = 0;
   }
 
-  delay(50); //produces 17-19 messages per second
+  //delay(50); //produces 17-19 messages per second
   //delay(100); //produces 9-10 messages per second
+  delay(200); //produces ~5 messages per second
 
   if (WiFi.isConnected() == false)
   {

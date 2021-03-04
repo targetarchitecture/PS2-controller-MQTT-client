@@ -74,7 +74,7 @@ void setUpPS2()
 
         Serial.println(ps2xErrorMsg.str().c_str());
 
-MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
+        MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
         MQTTClient.publish(MQTT_ERROR_TOPIC, ps2xErrorMsg.str().c_str());
 
         if (ps2xError == 0)
@@ -113,7 +113,7 @@ void loopPS2(byte vibrate)
     // bool turnOnLEDtoShowMQTTMessage = false;
 
     //read controller and set large motor to spin at 'vibrate' speed
-    ps2x.read_gamepad(false, vibrate) ;
+    ps2x.read_gamepad(false, vibrate);
 
     long left_x_mapped = map(ps2x.Analog(PSS_LX), 0, 255, -100, 100);
     long left_y_mapped = map(ps2x.Analog(PSS_LY), 0, 255, -100, 100);

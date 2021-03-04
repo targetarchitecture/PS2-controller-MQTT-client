@@ -2,6 +2,7 @@
 #include "topics.h"
 #include "vars.h"
 #include "credentials.h"
+#include <sstream>
 
 byte MQTT_RUMBLE = 0;
 unsigned long lastRumbleCommandRecievedMillis = 0;
