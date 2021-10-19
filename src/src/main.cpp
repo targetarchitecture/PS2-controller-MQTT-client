@@ -8,6 +8,8 @@
 #include "topics.h"
 #include "vars.h"
 
+//#define PRINT_TO_SERIAL 1
+
 // declare objects & variables
 void setupWifi();
 void getSwitchValue();
@@ -21,7 +23,9 @@ void setup()
   pinMode(A0, INPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
+#ifdef PRINT_TO_SERIAL
   Serial.begin(115200);
+#endif
 
   randomSeed(micros());
 
@@ -102,8 +106,10 @@ void getSwitchValue()
   // calculate the average:
   int average = total / numReadings;
 
+#ifdef PRINT_TO_SERIAL
   Serial.print("Raw dial value:");
   Serial.println(average);
+#endif
 
   if (average < 200)
   {
@@ -122,8 +128,10 @@ void getSwitchValue()
     dial = 4;
   }
 
+#ifdef PRINT_TO_SERIAL
   Serial.print("Dial position:");
   Serial.println(dial);
+#endif
 
   std::stringstream msg;
   msg << dial;
@@ -139,10 +147,14 @@ void setupWifi()
 
   while (WiFi.waitForConnectResult() != WL_CONNECTED)
   {
+#ifdef PRINT_TO_SERIAL
     Serial.println("Connection Failed! Rebooting...");
+#endif
     ESP.restart();
   }
 
+#ifdef PRINT_TO_SERIAL
   Serial.println("Ready on the local network");
   Serial.println("IP address: " + WiFi.localIP().toString());
+#endif
 }

@@ -40,6 +40,7 @@ const size_t button_capacity = JSON_OBJECT_SIZE(21);
 DynamicJsonDocument buttons(button_capacity);
 
 void dealWithButton(uint16_t button, std::string topic);
+void printToSerial(std::stringstream msg);
 
 void setUpPS2()
 {
@@ -72,7 +73,9 @@ void setUpPS2()
             ps2xErrorMsg << "Controller refusing to enter Pressures mode, may not support it  (loop " << i << ")";
         }
 
+#ifdef PRINT_TO_SERIAL
         Serial.println(ps2xErrorMsg.str().c_str());
+#endif
 
         MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
         MQTTClient.publish(MQTT_ERROR_TOPIC, ps2xErrorMsg.str().c_str());
@@ -101,6 +104,8 @@ void setUpPS2()
     //well it's probably time for a reboot
     ESP.restart();
 }
+
+
 
 void loopPS2(byte vibrate)
 {

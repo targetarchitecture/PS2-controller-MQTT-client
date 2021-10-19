@@ -6,11 +6,14 @@
 
 byte MQTT_RUMBLE = 0;
 unsigned long lastRumbleCommandRecievedMillis = 0;
+unsigned long connectionTiming = 0;
 void callback(char *topic, byte *payload, unsigned int length);
 
 void setupMQTTClient()
 {
+#ifdef PRINT_TO_SERIAL
   Serial.println("Connecting to MQTT server");
+#endif
 
   //set this to be a large enough value to allow a large MQTT message
   MQTTClient.setBufferSize(5000);
@@ -20,24 +23,43 @@ void setupMQTTClient()
   // setup callbacks
   MQTTClient.setCallback(callback);
 
+  connectionTiming = millis();
+
+#ifdef PRINT_TO_SERIAL
   Serial.println("connect mqtt...");
+#endif
 
   if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
   {
+#ifdef PRINT_TO_SERIAL
     Serial.println("MQTT Connected");
+#endif
+
     MQTTClient.publish(MQTT_INFO_TOPIC, "Connected");
 
+#ifdef PRINT_TO_SERIAL
     Serial.println("subscribing");
+#endif
 
     if (MQTTClient.subscribe(MQTT_RUMBLE_TOPIC) == true)
     {
+#ifdef PRINT_TO_SERIAL
       Serial.println("subscribed");
+#endif
     }
     else
     {
+#ifdef PRINT_TO_SERIAL
       Serial.println("NOT subscribed");
+#endif
     }
   }
+
+#ifdef PRINT_TO_SERIAL
+  Serial.print("connected in ");
+  Serial.print(millis() - connectionTiming);
+  Serial.println("ms");
+#endif
 }
 
 void reconnect()
@@ -47,32 +69,46 @@ void reconnect()
   {
     yield();
 
+#ifdef PRINT_TO_SERIAL
     Serial.print("Attempting MQTT connection...");
+#endif
 
     // Attempt to connect
     if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
     {
+#ifdef PRINT_TO_SERIAL
       Serial.println("MQTT connected");
+#endif
+
       // Once connected, publish an announcement...
       MQTTClient.publish(MQTT_INFO_TOPIC, "Reconnected");
 
-      // ... and resubscribe
+// ... and resubscribe
+#ifdef PRINT_TO_SERIAL
       Serial.println("resubscribing");
+#endif
 
       if (MQTTClient.subscribe(MQTT_RUMBLE_TOPIC) == true)
       {
+#ifdef PRINT_TO_SERIAL
         Serial.println("subscribed");
+#endif
       }
       else
       {
+#ifdef PRINT_TO_SERIAL
         Serial.println("NOT subscribed");
+#endif
       }
     }
     else
     {
+#ifdef PRINT_TO_SERIAL
       Serial.print("failed, rc=");
       Serial.print(MQTTClient.state());
       Serial.println(" try again in 5 seconds");
+#endif
+
       // Wait 5 seconds before retrying
       delay(5000);
     }
@@ -81,9 +117,11 @@ void reconnect()
 
 void callback(char *topic, byte *payload, unsigned int length)
 {
+#ifdef PRINT_TO_SERIAL
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
+#endif
 
   std::string message = "";
 
@@ -92,7 +130,9 @@ void callback(char *topic, byte *payload, unsigned int length)
     message += (char)payload[i];
   }
 
+#ifdef PRINT_TO_SERIAL
   Serial.println(message.c_str());
+#endif
 
   if (std::string(topic) == std::string(MQTT_RUMBLE_TOPIC))
   {
