@@ -36,11 +36,12 @@ DynamicJsonDocument left_joystick(left_stick_capacity);
 const size_t right_stick_capacity = JSON_OBJECT_SIZE(4);
 DynamicJsonDocument right_joystick(right_stick_capacity);
 
-const size_t button_capacity = JSON_OBJECT_SIZE(21);
-DynamicJsonDocument buttons(button_capacity);
+// const size_t button_capacity = JSON_OBJECT_SIZE(21);
+// DynamicJsonDocument buttons(button_capacity);
 
-void dealWithButton(uint16_t button, std::string topic);
+//void dealWithButton(uint16_t button, std::string topic);
 void printToSerial(std::stringstream msg);
+void buttonsMinimised();
 
 void setUpPS2()
 {
@@ -105,8 +106,6 @@ void setUpPS2()
     ESP.restart();
 }
 
-
-
 void loopPS2(byte vibrate)
 {
     /* You must Read Gamepad to get new values and set vibration values
@@ -114,8 +113,6 @@ void loopPS2(byte vibrate)
      if you don't enable the rumble, use ps2x.read_gamepad(); with no values
      You should call this at least once a second
    */
-
-    // bool turnOnLEDtoShowMQTTMessage = false;
 
     //read controller and set large motor to spin at 'vibrate' speed
     ps2x.read_gamepad(false, vibrate);
@@ -171,60 +168,38 @@ void loopPS2(byte vibrate)
         right_joystick.clear();
     }
 
-    //clear down button array
-    buttons.clear();
-
-    dealWithButton(PSB_START, "start");
-    dealWithButton(PSB_SELECT, "ps2_select");
-    dealWithButton(PSB_PAD_UP, "pad_up");
-    dealWithButton(PSB_PAD_DOWN, "pad_down");
-    dealWithButton(PSB_PAD_LEFT, "pad_left");
-    dealWithButton(PSB_PAD_RIGHT, "pad_right");
-    dealWithButton(PSB_TRIANGLE, "triangle");
-    dealWithButton(PSB_CROSS, "cross");
-    dealWithButton(PSB_SQUARE, "square");
-    dealWithButton(PSB_START, "start");
-    dealWithButton(PSB_CIRCLE, "circle");
-    dealWithButton(PSB_L1, "shoulder_left");
-    dealWithButton(PSB_R1, "shoulder_right");
-    dealWithButton(PSB_L2, "trigger_left");
-    dealWithButton(PSB_R2, "trigger_right");
-    dealWithButton(PSB_CROSS, "cross");
-    dealWithButton(PSB_SQUARE, "square");
-    dealWithButton(PSB_START, "start");
-    dealWithButton(PSB_L3, "stick_left");
-    dealWithButton(PSB_R3, "stick_right");
-
-    JsonObject buttonObj = buttons.as<JsonObject>();
-
-    // size_t joystickObjSize = joystickObj.size();
-    // Serial.println(joystickObjSize);
-
-    if (buttonObj.size() > 0)
-    {
-        std::string json;
-
-        serializeJson(buttonObj, json);
-
-        MQTTClient.publish(MQTT_BUTTON_TOPIC, json.c_str());
-
-        lastCommandSentMillis = millis(); //reset timer
-    }
+    //publish buttons minimised
+    buttonsMinimised();
 }
 
-void dealWithButton(uint16_t button, std::string topic)
+void buttonsMinimised()
 {
-    if (ps2x.Button(button) == true)
+    //clear down minimsed button array
+    std::string buttonCSV = "";
+    bool btnPressed = false;
+
+    uint16_t buttonIDs[] = {PSB_START, PSB_SELECT, PSB_PAD_UP, PSB_PAD_DOWN, PSB_PAD_LEFT, PSB_PAD_RIGHT, PSB_TRIANGLE, PSB_CROSS, PSB_SQUARE, PSB_CIRCLE, PSB_L1, PSB_R1, PSB_L2, PSB_R2, PSB_L3, PSB_R3};
+    std::string buttonTxt[] = {"START", "SELECT", "PAD_UP", "PAD_DOWN", "PAD_LEFT", "PAD_RIGHT", "TRIANGLE", "CROSS", "SQUARE", "CIRCLE", "L1", "R1", "L2", "R2", "L3", "R3"};
+
+    for (size_t i = 0; i < 16; i++)
     {
-        buttons[topic] = true;
+        if (ps2x.Button(buttonIDs[i]) == true)
+        {
+            buttonCSV.append(buttonTxt[i]);
+            buttonCSV.append(",");
+
+            btnPressed = true;
+        }
+    }
+
+    if (btnPressed == true)
+    {
+        buttonCSV = buttonCSV.substr(0, buttonCSV.size() - 1);
+
+        MQTTClient.publish(MQTT_BUTTON_TOPIC, buttonCSV.c_str());
 
         digitalWrite(LED_BUILTIN, LOW); //set LED to flash on
-    }
-    else
-    {
-        if (buttons.containsKey(topic) == true)
-        {
-            buttons.remove(topic);
-        }
+
+        lastCommandSentMillis = millis(); //reset timer
     }
 }

@@ -8,15 +8,22 @@
 #include "topics.h"
 #include "vars.h"
 
-//#define PRINT_TO_SERIAL 1
+#define PRINT_TO_SERIAL 1
 
 // declare objects & variables
 void setupWifi();
 void getSwitchValue();
+void onWifiConnect(const WiFiEventStationModeGotIP &event);
+void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
+
+WiFiEventHandler wifiConnectHandler;
+WiFiEventHandler wifiDisconnectHandler;
 
 unsigned int dial = -1;
 
 unsigned long interval = 1000 * 60 * 10; //10 minutes for a reboot if no signal recieved
+
+bool sendNetworkDetails = false;
 
 void setup()
 {
@@ -33,9 +40,6 @@ void setup()
 
   setupMQTTClient();
 
-  MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
-  MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
-
   getSwitchValue(); //get switch value once
 
   setUpPS2(); //connect controller
@@ -45,6 +49,10 @@ void setup()
 
 void loop()
 {
+  //delay(50); //produces 17-19 messages per second
+  delay(100); //produces 9-10 messages per second
+  //delay(200); //produces ~5 messages per second
+
   loopPS2(MQTT_RUMBLE);
 
   //stop rumble after 500ms if no MQTT signal recieved
@@ -56,22 +64,31 @@ void loop()
     MQTT_RUMBLE = 0;
   }
 
-  //delay(50); //produces 17-19 messages per second
-  //delay(100); //produces 9-10 messages per second
-  delay(200); //produces ~5 messages per second
-
   if (WiFi.isConnected() == false)
   {
-    setupWifi();
+    //just do nothing and wait for the reconnection event to happen
+    delay(1000);
   }
-
-  //MQTT section
-  if (!MQTTClient.connected())
+  else
   {
-    reconnect();
-  }
+    //MQTT section
+    if (MQTTClient.connected() == false)
+    {
+      MQTTConnect();
+    }
+    else
+    {
+      if (sendNetworkDetails == true)
+      {
+        MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
+        MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
 
-  MQTTClient.loop();
+        sendNetworkDetails = false;
+      }
+    }
+
+    MQTTClient.loop();
+  }
 
   //check for in-activity
   if (currentMillis - lastCommandSentMillis > interval)
@@ -90,7 +107,7 @@ void loop()
 
 void getSwitchValue()
 {
-  const int numReadings = 10;
+  const int numReadings = 100;
 
   int total = 0; // the running total
 
@@ -100,7 +117,7 @@ void getSwitchValue()
 
     total = total + sensorValue;
 
-    delay(100);
+    delay(10);
   }
 
   // calculate the average:
@@ -141,20 +158,31 @@ void getSwitchValue()
 
 void setupWifi()
 {
+  //Register event handlers
+  wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
+  wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
+
   //sort out WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // Connect to the network
+}
 
-  while (WiFi.waitForConnectResult() != WL_CONNECTED)
-  {
-#ifdef PRINT_TO_SERIAL
-    Serial.println("Connection Failed! Rebooting...");
-#endif
-    ESP.restart();
-  }
+void onWifiConnect(const WiFiEventStationModeGotIP &event)
+{
+  sendNetworkDetails = true;
 
 #ifdef PRINT_TO_SERIAL
-  Serial.println("Ready on the local network");
-  Serial.println("IP address: " + WiFi.localIP().toString());
+  Serial.println("Connected to Wi-Fi sucessfully.");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 #endif
+}
+
+void onWifiDisconnect(const WiFiEventStationModeDisconnected &event)
+{
+#ifdef PRINT_TO_SERIAL
+  Serial.println("Disconnected from Wi-Fi, trying to connect...");
+#endif
+  WiFi.disconnect();
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // Reconnect to the network
 }

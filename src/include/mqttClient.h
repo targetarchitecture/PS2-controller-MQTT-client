@@ -22,66 +22,30 @@ void setupMQTTClient()
 
   // setup callbacks
   MQTTClient.setCallback(callback);
-
-  connectionTiming = millis();
-
-#ifdef PRINT_TO_SERIAL
-  Serial.println("connect mqtt...");
-#endif
-
-  if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
-  {
-#ifdef PRINT_TO_SERIAL
-    Serial.println("MQTT Connected");
-#endif
-
-    MQTTClient.publish(MQTT_INFO_TOPIC, "Connected");
-
-#ifdef PRINT_TO_SERIAL
-    Serial.println("subscribing");
-#endif
-
-    if (MQTTClient.subscribe(MQTT_RUMBLE_TOPIC) == true)
-    {
-#ifdef PRINT_TO_SERIAL
-      Serial.println("subscribed");
-#endif
-    }
-    else
-    {
-#ifdef PRINT_TO_SERIAL
-      Serial.println("NOT subscribed");
-#endif
-    }
-  }
-
-#ifdef PRINT_TO_SERIAL
-  Serial.print("connected in ");
-  Serial.print(millis() - connectionTiming);
-  Serial.println("ms");
-#endif
 }
 
-void reconnect()
+void MQTTConnect()
 {
-  // Loop until we're reconnected
-  while (!MQTTClient.connected())
-  {
     yield();
 
 #ifdef PRINT_TO_SERIAL
     Serial.print("Attempting MQTT connection...");
 #endif
 
+    connectionTiming = millis();
+
     // Attempt to connect
     if (MQTTClient.connect(MQTT_CLIENTID, MQTT_USERNAME, MQTT_KEY))
     {
 #ifdef PRINT_TO_SERIAL
       Serial.println("MQTT connected");
+      Serial.print("connected in ");
+      Serial.print(millis() - connectionTiming);
+      Serial.println("ms");
 #endif
 
       // Once connected, publish an announcement...
-      MQTTClient.publish(MQTT_INFO_TOPIC, "Reconnected");
+      MQTTClient.publish(MQTT_INFO_TOPIC, "Connected");
 
 // ... and resubscribe
 #ifdef PRINT_TO_SERIAL
@@ -108,11 +72,8 @@ void reconnect()
       Serial.print(MQTTClient.state());
       Serial.println(" try again in 5 seconds");
 #endif
-
-      // Wait 5 seconds before retrying
-      delay(5000);
     }
-  }
+  
 }
 
 void callback(char *topic, byte *payload, unsigned int length)
