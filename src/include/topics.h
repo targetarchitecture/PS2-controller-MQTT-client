@@ -19,3 +19,5 @@ auto MQTT_IP_TOPIC = "gamepads/ps2/1/ip";
 auto MQTT_DIAL_TOPIC = "gamepads/ps2/1/dial";
 auto MQTT_ERROR_TOPIC = "gamepads/ps2/1/error";
 
+auto MQTT_LOOP_DELAY_TOPIC= "gamepads/ps2/1/loopdelay";
+

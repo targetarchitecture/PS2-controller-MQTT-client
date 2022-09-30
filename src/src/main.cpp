@@ -7,6 +7,7 @@
 #include "credentials.h"
 #include "topics.h"
 #include "vars.h"
+#include <Preferences.h>
 
 #define PRINT_TO_SERIAL 1
 
@@ -19,11 +20,17 @@ void onWifiDisconnect(const WiFiEventStationModeDisconnected &event);
 WiFiEventHandler wifiConnectHandler;
 WiFiEventHandler wifiDisconnectHandler;
 
+Preferences preferences;
+
+unsigned long loopDelay = 100;
+
 unsigned int dial = -1;
 
-unsigned long interval = 1000 * 60 * 10; //10 minutes for a reboot if no signal recieved
+unsigned long interval = 1000 * 60 * 10; // 10 minutes for a reboot if no signal recieved
 
-bool sendNetworkDetails = false;
+bool sendNetworkDetails = true;
+
+unsigned long lastDelayLoopMillis = 0;
 
 void setup()
 {
@@ -34,28 +41,33 @@ void setup()
   Serial.begin(115200);
 #endif
 
+  // get loop delay
+  preferences.begin("ps2", false);
+  loopDelay = preferences.getULong("loopDelay", loopDelay);
+
   randomSeed(micros());
 
   setupWifi();
 
   setupMQTTClient();
 
-  getSwitchValue(); //get switch value once
+  getSwitchValue(); // get switch value once
 
-  setUpPS2(); //connect controller
+  setUpPS2(); // connect controller
 
   MQTT_RUMBLE = 0;
 }
 
 void loop()
 {
-  //delay(50); //produces 17-19 messages per second
-  delay(100); //produces 9-10 messages per second
-  //delay(200); //produces ~5 messages per second
+  // delay(50);  //produces 17-19 messages per second
+  // delay(100); //produces 9-10 messages per second
+  // delay(200); //produces ~5 messages per second
+  delay(loopDelay); // now variable
 
   loopPS2(MQTT_RUMBLE);
 
-  //stop rumble after 500ms if no MQTT signal recieved
+  // stop rumble after 500ms if no MQTT signal recieved
   unsigned long currentMillis = millis();
 
   if (currentMillis - lastRumbleCommandRecievedMillis > 500)
@@ -66,12 +78,12 @@ void loop()
 
   if (WiFi.isConnected() == false)
   {
-    //just do nothing and wait for the reconnection event to happen
+    // just do nothing and wait for the reconnection event to happen
     delay(1000);
   }
   else
   {
-    //MQTT section
+    // MQTT section
     if (MQTTClient.connected() == false)
     {
       MQTTConnect();
@@ -80,28 +92,35 @@ void loop()
     {
       if (sendNetworkDetails == true)
       {
-        MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
+        // MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
         MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
 
         sendNetworkDetails = false;
+      }
+
+      // send loop delay
+      if (currentMillis - lastDelayLoopMillis > 5000)
+      {
+        lastDelayLoopMillis = currentMillis;
+        MQTTClient.publish(MQTT_LOOP_DELAY_TOPIC, String(loopDelay).c_str());
       }
     }
 
     MQTTClient.loop();
   }
 
-  //check for in-activity
+  // check for in-activity
   if (currentMillis - lastCommandSentMillis > interval)
   {
     MQTTClient.publish(MQTT_INFO_TOPIC, "Time to reboot due to inactivity");
 
     delay(500);
 
-    //well it's probably time for a reboot
+    // well it's probably time for a reboot
     ESP.restart();
   }
 
-  //set LED off
+  // set LED off
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
@@ -158,11 +177,11 @@ void getSwitchValue()
 
 void setupWifi()
 {
-  //Register event handlers
+  // Register event handlers
   wifiConnectHandler = WiFi.onStationModeGotIP(onWifiConnect);
   wifiDisconnectHandler = WiFi.onStationModeDisconnected(onWifiDisconnect);
 
-  //sort out WiFi
+  // sort out WiFi
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD); // Connect to the network
 }
