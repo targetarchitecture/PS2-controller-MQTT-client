@@ -49,14 +49,14 @@ void MQTTConnect()
 #endif
 
     // Once connected, publish an announcement...
-    MQTTClient.publish(MQTT_INFO_TOPIC, "Connected");
+    MQTTClient.publish(MQTT_INFO_TOPIC.c_str(), "Connected");
 
 // ... and resubscribe
 #ifdef PRINT_TO_SERIAL
     Serial.println("resubscribing");
 #endif
 
-    if (MQTTClient.subscribe(MQTT_RUMBLE_TOPIC) == true)
+    if (MQTTClient.subscribe(MQTT_RUMBLE_TOPIC.c_str()) == true)
     {
 #ifdef PRINT_TO_SERIAL
       Serial.println("subscribed");
@@ -69,9 +69,9 @@ void MQTTConnect()
 #endif
     }
 
-    if (MQTTClient.subscribe(MQTT_LOOP_DELAY_TOPIC) == true)
+    if (MQTTClient.subscribe(MQTT_LOOP_DELAY_TOPIC.c_str()) == true)
     {
-       MQTTClient.publish(MQTT_LOOP_DELAY_TOPIC, String(loopDelay).c_str());
+       MQTTClient.publish(MQTT_LOOP_DELAY_TOPIC.c_str(), String(loopDelay).c_str());
 #ifdef PRINT_TO_SERIAL
       Serial.println("subscribed");
 #endif
@@ -112,7 +112,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   Serial.println(message.c_str());
 #endif
 
-  if (std::string(topic) == std::string(MQTT_RUMBLE_TOPIC))
+  if (std::string(topic) == std::string(MQTT_RUMBLE_TOPIC.c_str()))
   {
     int RumbleStrength = atoi(message.c_str());
 
@@ -122,9 +122,9 @@ void callback(char *topic, byte *payload, unsigned int length)
     std::stringstream ps2xMsg;
     ps2xMsg << "Vibrate set to " << (int)MQTT_RUMBLE;
 
-    MQTTClient.publish(MQTT_INFO_TOPIC, ps2xMsg.str().c_str());
+    MQTTClient.publish(MQTT_INFO_TOPIC.c_str(), ps2xMsg.str().c_str());
   }
-  else if (std::string(topic) == std::string(MQTT_LOOP_DELAY_TOPIC))
+  else if (std::string(topic) == std::string(MQTT_LOOP_DELAY_TOPIC.c_str()))
   {
     loopDelay = atol(message.c_str());
 

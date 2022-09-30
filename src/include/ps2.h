@@ -65,8 +65,8 @@ void setUpPS2()
         Serial.println(ps2xErrorMsg.str().c_str());
 #endif
 
-        MQTTClient.publish(MQTT_INFO_TOPIC, ps2xErrorMsg.str().c_str());
-        MQTTClient.publish(MQTT_ERROR_TOPIC, ps2xErrorMsg.str().c_str());
+        MQTTClient.publish(MQTT_INFO_TOPIC.c_str(), ps2xErrorMsg.str().c_str());
+        MQTTClient.publish(MQTT_ERROR_TOPIC.c_str(), ps2xErrorMsg.str().c_str());
 
         if (ps2xError == 0)
         {
@@ -85,7 +85,7 @@ void setUpPS2()
     std::stringstream ps2xMsg;
     ps2xMsg << "Time to reboot after " << maxAttempts << " attempts to connect controller";
 
-    MQTTClient.publish(MQTT_INFO_TOPIC, ps2xMsg.str().c_str());
+    MQTTClient.publish(MQTT_INFO_TOPIC.c_str(), ps2xMsg.str().c_str());
 
     delay(500);
 
@@ -117,10 +117,10 @@ void loopPS2(byte vibrate)
     if (abs(left_x_mapped) > 5 ||
         abs(left_y_mapped) > 5)
     {
-        MQTTClient.publish(MQTT_LEFT_X_TOPIC, String( left_x_mapped).c_str());
-        MQTTClient.publish(MQTT_LEFT_X_RAW_TOPIC, String(ps2x.Analog(PSS_LX)).c_str());
-        MQTTClient.publish(MQTT_LEFT_Y_TOPIC, String(left_y_mapped).c_str());
-        MQTTClient.publish(MQTT_LEFT_Y_RAW_TOPIC, String(ps2x.Analog(PSS_LY)).c_str());
+        MQTTClient.publish(MQTT_LEFT_X_TOPIC.c_str(), String(left_x_mapped).c_str());
+        MQTTClient.publish(MQTT_LEFT_X_RAW_TOPIC.c_str(), String(ps2x.Analog(PSS_LX)).c_str());
+        MQTTClient.publish(MQTT_LEFT_Y_TOPIC.c_str(), String(left_y_mapped).c_str());
+        MQTTClient.publish(MQTT_LEFT_Y_RAW_TOPIC.c_str(), String(ps2x.Analog(PSS_LY)).c_str());
 
         digitalWrite(LED_BUILTIN, LOW); // set LED to flash on
     }
@@ -129,10 +129,10 @@ void loopPS2(byte vibrate)
     if (abs(right_x_mapped) > 5 ||
         abs(right_y_mapped) > 5)
     {
-        MQTTClient.publish(MQTT_RIGHT_X_TOPIC, String( right_x_mapped).c_str());
-        MQTTClient.publish(MQTT_RIGHT_X_RAW_TOPIC, String(ps2x.Analog(PSS_RX)).c_str());
-        MQTTClient.publish(MQTT_RIGHT_Y_TOPIC, String(right_y_mapped).c_str());
-        MQTTClient.publish(MQTT_RIGHT_Y_RAW_TOPIC, String(ps2x.Analog(PSS_RY)).c_str());
+        MQTTClient.publish(MQTT_RIGHT_X_TOPIC.c_str(), String(right_x_mapped).c_str());
+        MQTTClient.publish(MQTT_RIGHT_X_RAW_TOPIC.c_str(), String(ps2x.Analog(PSS_RX)).c_str());
+        MQTTClient.publish(MQTT_RIGHT_Y_TOPIC.c_str(), String(right_y_mapped).c_str());
+        MQTTClient.publish(MQTT_RIGHT_Y_RAW_TOPIC.c_str(), String(ps2x.Analog(PSS_RY)).c_str());
 
         digitalWrite(LED_BUILTIN, LOW); // set LED to flash on
     }
@@ -143,19 +143,19 @@ void loopPS2(byte vibrate)
 
 void buttonsMinimised()
 {
-    // clear down minimsed button array
-    std::string buttonCSV = "";
     bool btnPressed = false;
 
     uint16_t buttonIDs[] = {PSB_START, PSB_SELECT, PSB_PAD_UP, PSB_PAD_DOWN, PSB_PAD_LEFT, PSB_PAD_RIGHT, PSB_TRIANGLE, PSB_CROSS, PSB_SQUARE, PSB_CIRCLE, PSB_L1, PSB_R1, PSB_L2, PSB_R2, PSB_L3, PSB_R3};
-    std::string buttonTxt[] = {"START", "SELECT", "PAD_UP", "PAD_DOWN", "PAD_LEFT", "PAD_RIGHT", "TRIANGLE", "CROSS", "SQUARE", "CIRCLE", "L1", "R1", "L2", "R2", "L3", "R3"};
+    String buttonTxt[] = {"START", "SELECT", "PAD_UP", "PAD_DOWN", "PAD_LEFT", "PAD_RIGHT", "TRIANGLE", "CROSS", "SQUARE", "CIRCLE", "BUMPER_LEFT", "BUMPER_RIGHT", "TRIGGER_LEFT", "TRIGGER_RIGHT", "STICK_LEFT", "STICK_RIGHT"};
 
     for (size_t i = 0; i < 16; i++)
     {
         if (ps2x.Button(buttonIDs[i]) == true)
         {
-            buttonCSV.append(buttonTxt[i]);
-            buttonCSV.append(",");
+            String topic = MQTT_BUTTON_TOPIC + String("/") + buttonTxt[i];
+            topic.toLowerCase();
+
+            MQTTClient.publish(topic.c_str(), "press");
 
             btnPressed = true;
         }
@@ -163,10 +163,6 @@ void buttonsMinimised()
 
     if (btnPressed == true)
     {
-        buttonCSV = buttonCSV.substr(0, buttonCSV.size() - 1);
-
-        MQTTClient.publish(MQTT_BUTTON_TOPIC, buttonCSV.c_str());
-
         digitalWrite(LED_BUILTIN, LOW); // set LED to flash on
 
         lastCommandSentMillis = millis(); // reset timer

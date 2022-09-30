@@ -93,7 +93,7 @@ void loop()
       if (sendNetworkDetails == true)
       {
         // MQTTClient.publish(MQTT_IP_TOPIC, WIFI_SSID);
-        MQTTClient.publish(MQTT_IP_TOPIC, WiFi.localIP().toString().c_str());
+        MQTTClient.publish(MQTT_IP_TOPIC.c_str(), WiFi.localIP().toString().c_str());
 
         sendNetworkDetails = false;
       }
@@ -102,7 +102,7 @@ void loop()
       if (currentMillis - lastDelayLoopMillis > 5000)
       {
         lastDelayLoopMillis = currentMillis;
-        MQTTClient.publish(MQTT_LOOP_DELAY_TOPIC, String(loopDelay).c_str());
+        MQTTClient.publish(MQTT_LOOP_DELAY_TOPIC.c_str(), String(loopDelay).c_str());
       }
     }
 
@@ -112,7 +112,7 @@ void loop()
   // check for in-activity
   if (currentMillis - lastCommandSentMillis > interval)
   {
-    MQTTClient.publish(MQTT_INFO_TOPIC, "Time to reboot due to inactivity");
+    MQTTClient.publish(MQTT_INFO_TOPIC.c_str(), "Time to reboot due to inactivity");
 
     delay(500);
 
@@ -172,7 +172,7 @@ void getSwitchValue()
   std::stringstream msg;
   msg << dial;
 
-  MQTTClient.publish(MQTT_DIAL_TOPIC, msg.str().c_str());
+  MQTTClient.publish(MQTT_DIAL_TOPIC.c_str(), msg.str().c_str());
 }
 
 void setupWifi()
